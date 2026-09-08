@@ -279,7 +279,7 @@
   </div>
 
   <script>
-    // ⚠️ MASUKKAN URL WEB APP GOOGLE APPS SCRIPT ANDA DI SINI
+    // URL Web App Google Apps Script Anda
     const API_URL = "https://script.google.com/macros/s/AKfycbzUbZVpP9QeJc2CyYxHWNJmI1G5k2RIzjFKbQYTYvyvFVOGe5w1L1vAHt4SJTkqxA/exec";
 
     let html5QrCode = null;
@@ -353,55 +353,7 @@
       prosesKirimAbsensi(idInput);
     }
 
-    // 6. Fungsi Kirim Data ke API Apps Script
-    function prosesKirimAbsensi(idScan) {
-      setStatusBanner("info", "⏳ Mengirim data absensi...");
-
-      fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ id: idScan })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setStatusBanner("success", "✅ " + data.message);
-          document.getElementById("res-id").innerText = idScan;
-          document.getElementById("res-nama").innerText = data.data.nama;
-          document.getElementById("res-jabatan").innerText = data.data.jabatan;
-          document.getElementById("res-waktu").innerText = data.data.waktu;
-          document.getElementById("manual-id").value = "";
-        } else {
-          setStatusBanner("danger", "❌ " + data.message);
-          document.getElementById("res-id").innerText = idScan;
-          document.getElementById("res-nama").innerText = "-";
-          document.getElementById("res-jabatan").innerText = "-";
-          document.getElementById("res-waktu").innerText = "-";
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        setStatusBanner("danger", "❌ Gagal terhubung ke server Apps Script!");
-      })
-      .finally(() => {
-        setTimeout(() => { isProcessing = false; }, 3000);
-      });
-    }
-
-    // Helper Ubah Tampilan Banner Status
-    function setStatusBanner(type, message) {
-      const banner = document.getElementById("status-banner");
-      banner.className = "alert-banner " + type;
-      banner.innerText = message;
-    }
-
-    // Jalankan Kamera Saat Halaman Selesai Dimuat
-    window.addEventListener("DOMContentLoaded", startCamera);
-    <!-- Bagian akhir skrip di dalam index.html -->
-  <script>
-    // ... (kode jam digital & kamera di atasnya biarkan saja) ...
-
-    // 1. TARUH FUNGSI PEMBERSIH ID DI SINI
+    // 6. Pembersih Teks Hasil Scan (Ekstraksi ID jika isi QR berupa URL)
     function ekstraksiIdBersih(textScan) {
       if (!textScan) return "";
       
@@ -419,7 +371,7 @@
       return textScan.trim();
     }
 
-    // 2. GANTI FUNGSI PROSES KIRIM ABSENSI DENGAN INI
+    // 7. Fungsi Kirim Data ke API Apps Script
     function prosesKirimAbsensi(idScan) {
       var idBersih = ekstraksiIdBersih(idScan);
       
@@ -456,7 +408,15 @@
       });
     }
 
-    // ... (kode banner status dan window listener di bawahnya) ...
+    // 8. Helper Ubah Tampilan Banner Status
+    function setStatusBanner(type, message) {
+      const banner = document.getElementById("status-banner");
+      banner.className = "alert-banner " + type;
+      banner.innerText = message;
+    }
+
+    // Jalankan Kamera Saat Halaman Selesai Dimuat
+    window.addEventListener("DOMContentLoaded", startCamera);
   </script>
 
 </body>
