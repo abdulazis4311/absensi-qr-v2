@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Presensi QR Code Guru & Karyawan</title>
+  
+  <!-- Library Scanner QR Code (HTML5-QRCode) -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #0b1120;
+      color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      background-color: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Jam Digital & Tanggal */
+    .time-card {
+      background-color: #0d1527;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 15px;
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    .time-card .clock {
+      font-size: 26px;
+      font-weight: bold;
+      color: #38bdf8;
+      letter-spacing: 1px;
+    }
+
+    .time-card .date {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+
+    /* Box Kamera Scanner */
+    .scanner-box {
+      position: relative;
+      background-color: #000000;
+      border: 2px solid #38bdf8;
+      border-radius: 12px;
+      overflow: hidden;
+      min-height: 250px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    #reader {
+      width: 100%;
+      height: 100%;
+    }
+
+    #reader video {
+      object-fit: cover;
+    }
+
+    /* Overlay Pesan Kegagalan Kamera */
+    .camera-error-overlay {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid #334155;
+      color: #f87171;
+      font-size: 13px;
+      padding: 6px 16px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 10;
+      width: 90%;
+      justify-content: center;
+    }
+
+    /* Tombol Upload Foto QR */
+    .btn-file {
+      display: block;
+      width: 100%;
+      background-color: #06b6d4;
+      color: #ffffff;
+      text-align: center;
+      padding: 12px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      margin-bottom: 15px;
+      transition: 0.2s;
+    }
+
+    .btn-file:hover {
+      background-color: #0891b2;
+    }
+
+    /* Form Input Manual ID */
+    .input-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+
+    .input-group input {
+      flex: 1;
+      background-color: #0d1527;
+      border: 1px solid #1e293b;
+      color: #ffffff;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .input-group input::placeholder {
+      color: #64748b;
+    }
+
+    .input-group button {
+      background-color: #10b981;
+      color: #ffffff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .input-group button:hover {
+      background-color: #059669;
+    }
+
+    /* Alert Banner Status Scan */
+    .alert-banner {
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    .alert-banner.danger {
+      background-color: #991b1b;
+      color: #fecaca;
+    }
+
+    .alert-banner.success {
+      background-color: #065f46;
+      color: #a7f3d0;
+    }
+
+    .alert-banner.info {
+      background-color: #1e3a8a;
+      color: #bfdbfe;
+    }
+
+    /* Detail Hasil Scan */
+    .details-card {
+      background-color: #0d1527;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px dashed #1e293b;
+      font-size: 13px;
+    }
+
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+
+    .detail-row span:first-child {
+      color: #94a3b8;
+    }
+
+    .detail-row span:last-child {
+      color: #ffffff;
+      font-weight: 500;
+    }
+
+    /* Input File Asli Di-hide */
+    #qr-input-file {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- Jam & Tanggal -->
+    <div class="time-card">
+      <div class="clock" id="clock">00:00:00 WIB</div>
+      <div class="date" id="date">Memuat tanggal...</div>
+    </div>
+
+    <!-- Area Video Kamera -->
+    <div class="scanner-box">
+      <div id="reader"></div>
+      <div class="camera-error-overlay" id="camera-error">
+        ❌ Kamera tidak dapat diaktifkan
+      </div>
+    </div>
+
+    <!-- Tombol Foto QR Code -->
+    <label for="qr-input-file" class="btn-file">
+      📷 FOTO QR CODE
+    </label>
+    <input type="file" id="qr-input-file" accept="image/*">
+
+    <!-- Input Manual ID / NIP -->
+    <div class="input-group">
+      <input type="text" id="manual-id" placeholder="Atau ketik ID Guru/Karyawan...">
+      <button onclick="kirimManual()">Kirim</button>
+    </div>
+
+    <!-- Banner Status Alert -->
+    <div class="alert-banner danger" id="status-banner">
+      ❌ Kamera diblokir / tidak tersedia
+    </div>
+
+    <!-- Detail Informasi -->
+    <div class="details-card">
+      <div class="detail-row">
+        <span>ID Guru/Karyawan:</span>
+        <span id="res-id">-</span>
+      </div>
+      <div class="detail-row">
+        <span>Nama Lengkap:</span>
+        <span id="res-nama">-</span>
+      </div>
+      <div class="detail-row">
+        <span>Jabatan:</span>
+        <span id="res-jabatan">-</span>
+      </div>
+      <div class="detail-row">
+        <span>Waktu Scan:</span>
+        <span id="res-waktu">-</span>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ⚠️ MASUKKAN URL WEB APP GOOGLE APPS SCRIPT ANDA DI SINI
+    const API_URL = "https://script.google.com/macros/library/d/1kFwGypBj2bY94J9pV4eqpaIVB_36l488xzu9zue8rkS1O1ln5jJpP9qe/76";
+
+    let html5QrCode = null;
+    let isProcessing = false;
+
+    // 1. Fungsi Update Jam & Tanggal Digital
+    function updateClock() {
+      const now = new Date();
+      
+      const jam = String(now.getHours()).padStart(2, '0');
+      const menit = String(now.getMinutes()).padStart(2, '0');
+      const detik = String(now.getSeconds()).padStart(2, '0');
+      document.getElementById("clock").innerText = `${jam}:${menit}:${detik} WIB`;
+
+      const opsiTanggal = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+      document.getElementById("date").innerText = now.toLocaleDateString('id-ID', opsiTanggal);
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // 2. Inisialisasi Kamera Pemindai
+    function startCamera() {
+      html5QrCode = new Html5Qrcode("reader");
+      const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+
+      html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        onScanSuccess
+      ).then(() => {
+        document.getElementById("camera-error").style.display = "none";
+        setStatusBanner("info", "🔍 Kamera aktif, arahkan QR Code ke kotak scan");
+      }).catch(err => {
+        console.error("Gagal Buka Kamera:", err);
+        document.getElementById("camera-error").style.display = "flex";
+        setStatusBanner("danger", "❌ Kamera diblokir / tidak tersedia");
+      });
+    }
+
+    // 3. Callback saat QR Terbaca
+    function onScanSuccess(decodedText) {
+      if (isProcessing) return;
+      isProcessing = true;
+      prosesKirimAbsensi(decodedText);
+    }
+
+    // 4. Handle Input Foto Gambar QR
+    document.getElementById('qr-input-file').addEventListener('change', e => {
+      if (e.target.files.length === 0) return;
+      const imageFile = e.target.files[0];
+      
+      setStatusBanner("info", "⏳ Membaca gambar QR Code...");
+      
+      const html5QrCodeFile = new Html5Qrcode("reader");
+      html5QrCodeFile.scanFile(imageFile, true)
+        .then(decodedText => {
+          prosesKirimAbsensi(decodedText);
+        })
+        .catch(err => {
+          setStatusBanner("danger", "❌ QR Code tidak terdeteksi pada foto!");
+        });
+    });
+
+    // 5. Handle Kirim Manual via Form
+    function kirimManual() {
+      const idInput = document.getElementById("manual-id").value.trim();
+      if (!idInput) {
+        alert("Masukkan ID / NIP terlebih dahulu!");
+        return;
+      }
+      prosesKirimAbsensi(idInput);
+    }
+
+    // 6. Fungsi Kirim Data ke API Apps Script
+    function prosesKirimAbsensi(idScan) {
+      setStatusBanner("info", "⏳ Mengirim data absensi...");
+
+      fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ id: idScan })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setStatusBanner("success", "✅ " + data.message);
+          document.getElementById("res-id").innerText = idScan;
+          document.getElementById("res-nama").innerText = data.data.nama;
+          document.getElementById("res-jabatan").innerText = data.data.jabatan;
+          document.getElementById("res-waktu").innerText = data.data.waktu;
+          document.getElementById("manual-id").value = "";
+        } else {
+          setStatusBanner("danger", "❌ " + data.message);
+          document.getElementById("res-id").innerText = idScan;
+          document.getElementById("res-nama").innerText = "-";
+          document.getElementById("res-jabatan").innerText = "-";
+          document.getElementById("res-waktu").innerText = "-";
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        setStatusBanner("danger", "❌ Gagal terhubung ke server Apps Script!");
+      })
+      .finally(() => {
+        setTimeout(() => { isProcessing = false; }, 3000);
+      });
+    }
+
+    // Helper Ubah Tampilan Banner Status
+    function setStatusBanner(type, message) {
+      const banner = document.getElementById("status-banner");
+      banner.className = "alert-banner " + type;
+      banner.innerText = message;
+    }
+
+    // Jalankan Kamera Saat Halaman Selesai Dimuat
+    window.addEventListener("DOMContentLoaded", startCamera);
+  </script>
+
+</body>
+</html>
