@@ -219,135 +219,11 @@
     #qr-input-file {
       display: none;
     }
-
-    /* ===== LOGIN GURU / KARYAWAN ===== */
-    .login-screen {
-      width: 100%;
-      max-width: 480px;
-      background-color: #111827;
-      border: 1px solid #1e293b;
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-    }
-    .login-screen h2 {
-      text-align: center;
-      color: #38bdf8;
-      margin-bottom: 8px;
-      font-size: 22px;
-    }
-    .login-screen .login-subtitle {
-      text-align: center;
-      color: #94a3b8;
-      font-size: 13px;
-      margin-bottom: 20px;
-    }
-    .login-form-group { margin-bottom: 14px; }
-    .login-form-group label {
-      display: block;
-      color: #cbd5e1;
-      font-size: 13px;
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-    .login-form-group input {
-      width: 100%;
-      background-color: #0d1527;
-      border: 1px solid #334155;
-      color: #ffffff;
-      padding: 11px 13px;
-      border-radius: 8px;
-      font-size: 14px;
-      outline: none;
-    }
-    .login-form-group input:focus {
-      border-color: #38bdf8;
-      box-shadow: 0 0 0 2px rgba(56,189,248,0.12);
-    }
-    .login-button {
-      width: 100%;
-      background-color: #10b981;
-      color: #ffffff;
-      border: none;
-      padding: 12px;
-      border-radius: 8px;
-      font-weight: bold;
-      font-size: 14px;
-      cursor: pointer;
-      margin-top: 6px;
-    }
-    .login-button:hover { background-color: #059669; }
-    .login-button:disabled { opacity: 0.65; cursor: not-allowed; }
-    .login-error {
-      display: none;
-      background-color: #991b1b;
-      color: #fecaca;
-      border: 1px solid #b91c1c;
-      padding: 10px 12px;
-      border-radius: 8px;
-      font-size: 13px;
-      text-align: center;
-      margin-bottom: 14px;
-    }
-    .scanner-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-    .scanner-user {
-      color: #94a3b8;
-      font-size: 12px;
-      line-height: 1.35;
-    }
-    .logout-button {
-      background: #dc2626;
-      color: #fff;
-      border: none;
-      border-radius: 7px;
-      padding: 7px 11px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .logout-button:hover { background: #b91c1c; }
-
   </style>
 </head>
 <body>
 
-  <!-- LOGIN SELALU MUNCUL SAAT URL SCANNER DIBUKA -->
-  <div class="login-screen" id="login-screen">
-    <h2>🔐 Login Scanner</h2>
-    <div class="login-subtitle">Presensi Guru & Karyawan SMP Yanuri</div>
-
-    <div class="login-error" id="login-error"></div>
-
-    <form id="login-form" onsubmit="loginScanner(event)">
-      <div class="login-form-group">
-        <label for="login-id">ID Guru / Karyawan</label>
-        <input type="text" id="login-id" autocomplete="off"
-               placeholder="Contoh: ynr-002" required>
-      </div>
-
-      <div class="login-form-group">
-        <label for="login-username">Username</label>
-        <input type="text" id="login-username" autocomplete="username"
-               placeholder="Masukkan username" required>
-      </div>
-
-      <div class="login-form-group">
-        <label for="login-password">Password</label>
-        <input type="password" id="login-password" autocomplete="current-password"
-               placeholder="Masukkan password" required>
-      </div>
-
-      <button type="submit" class="login-button" id="login-button">🔓 LOGIN</button>
-    </form>
-  </div>
-
-  <div class="container" id="scanner-app" style="display:none;">
+  <div class="container">
     
     <!-- Jam & Tanggal -->
     <div class="time-card">
@@ -408,127 +284,6 @@
 
     let html5QrCode = null;
     let isProcessing = false;
-    let authToken = "";
-    let loggedUser = null;
-
-
-    // ===== LOGIN SCANNER =====
-    function tampilkanLogin() {
-      document.getElementById("login-screen").style.display = "block";
-      document.getElementById("scanner-app").style.display = "none";
-      setTimeout(function() {
-        document.getElementById("login-id").focus();
-      }, 50);
-    }
-
-    function tampilkanScanner(userData, loginId) {
-      loggedUser = userData || {};
-      document.getElementById("login-screen").style.display = "none";
-      document.getElementById("scanner-app").style.display = "block";
-
-      document.getElementById("logged-user").innerText =
-        loggedUser.nama || loggedUser.name || loggedUser.username || "Pengguna";
-      document.getElementById("logged-id").innerText =
-        "ID: " + (loggedUser.id || loginId);
-
-      // Kamera baru boleh aktif setelah login berhasil.
-      startCamera();
-    }
-
-    function loginScanner(event) {
-      event.preventDefault();
-
-      var id = document.getElementById("login-id").value.trim();
-      var username = document.getElementById("login-username").value.trim();
-      var password = document.getElementById("login-password").value;
-
-      var errorBox = document.getElementById("login-error");
-      var button = document.getElementById("login-button");
-
-      errorBox.style.display = "none";
-
-      if (!id || !username || !password) {
-        errorBox.innerText = "ID, username, dan password wajib diisi.";
-        errorBox.style.display = "block";
-        return;
-      }
-
-      button.disabled = true;
-      button.innerText = "⏳ MEMERIKSA...";
-
-      fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          action: "loginPiket",
-          id: id,
-          username: username,
-          password: password
-        })
-      })
-      .then(function(res) { return res.json(); })
-      .then(function(data) {
-        if (data && data.success && data.token) {
-          authToken = data.token;
-
-          var userData = data.data || data.user || {
-            id: id,
-            username: username
-          };
-
-          document.getElementById("login-password").value = "";
-          tampilkanScanner(userData, id);
-        } else {
-          errorBox.innerText =
-            (data && data.message)
-              ? data.message
-              : "Login gagal. Periksa ID, username, dan password.";
-          errorBox.style.display = "block";
-        }
-      })
-      .catch(function(err) {
-        console.error("Login scanner error:", err);
-        errorBox.innerText =
-          "❌ Gagal terhubung ke server Apps Script.";
-        errorBox.style.display = "block";
-      })
-      .finally(function() {
-        button.disabled = false;
-        button.innerText = "🔓 LOGIN";
-      });
-    }
-
-    async function logoutScanner() {
-      if (html5QrCode) {
-        try {
-          await html5QrCode.stop();
-        } catch (e) {
-          console.warn("Kamera sudah berhenti / tidak aktif:", e);
-        }
-        html5QrCode = null;
-      }
-
-      if (authToken) {
-        try {
-          await fetch(API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({
-              action: "logoutPiket",
-              token: authToken
-            })
-          });
-        } catch (e) {
-          console.warn("Logout server gagal:", e);
-        }
-      }
-
-      authToken = "";
-      loggedUser = null;
-      document.getElementById("login-form").reset();
-      document.getElementById("login-error").style.display = "none";
-      tampilkanLogin();
-    }
 
     // 1. Fungsi Update Jam & Tanggal Digital
     function updateClock() {
@@ -590,11 +345,6 @@
 
     // 5. Handle Kirim Manual via Form
     function kirimManual() {
-      if (!authToken) {
-        tampilkanLogin();
-        return;
-      }
-
       const idInput = document.getElementById("manual-id").value.trim();
       if (!idInput) {
         alert("Masukkan ID / NIP terlebih dahulu!");
@@ -623,11 +373,6 @@
 
     // 7. Fungsi Kirim Data ke API Apps Script
     function prosesKirimAbsensi(idScan) {
-      if (!authToken) {
-        tampilkanLogin();
-        return;
-      }
-
       var idBersih = ekstraksiIdBersih(idScan);
       
       setStatusBanner("info", "⏳ Mengirim data absensi (" + idBersih + ")...");
@@ -635,11 +380,7 @@
       fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          action: "scan",
-          token: authToken,
-          id: idBersih
-        })
+        body: JSON.stringify({ id: idBersih })
       })
       .then(res => res.json())
       .then(data => {
@@ -674,10 +415,8 @@
       banner.innerText = message;
     }
 
-    // URL Scanner selalu dimulai dari LOGIN.
-    window.addEventListener("DOMContentLoaded", function() {
-      tampilkanLogin();
-    });
+    // Jalankan Kamera Saat Halaman Selesai Dimuat
+    window.addEventListener("DOMContentLoaded", startCamera);
   </script>
 
 </body>
